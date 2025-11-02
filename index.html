@@ -56,3 +56,614 @@
 
 </body>
 </html>
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MiniCRM Mobile — Android (PWA)</title>
+<meta name="theme-color" content="#0c0f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" sizes="512x512" href="icons/icon-512.png">
+<style>
+/* ===== MIUI‑дружелюбный тёмный UI для Android ===== */
+:root{
+  --bg:#0c0f14; --panel:#11161f; --soft:#0f141c; --border:#1d2632;
+  --text:#e8eef6; --dim:#9aa8bf; --accent:#19c37d; --danger:#ff5d5d;
+  --warn:#ffb020; --ok:#2ecc71; --radius:16px; --shadow:0 6px 24px rgba(0,0,0,.35);
+  --glass:rgba(255,255,255,.04);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:linear-gradient(180deg,var(--bg),#0a0e13 50%,#0a0d12);color:var(--text);font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell}
+
+/* Шапка */
+.header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,rgba(12,15,20,.95),rgba(12,15,20,.75));backdrop-filter:saturate(120%) blur(8px);padding:10px 12px;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#40ffb4,var(--accent));box-shadow:0 0 16px var(--accent)}
+.brand h1{font-size:16px;margin:0;font-weight:600}
+
+/* Поиск */
+.search{margin-top:10px;display:flex;gap:8px}
+.search input{flex:1;background:var(--soft);border:1px solid var(--border);color:var(--text);padding:12px 12px;border-radius:12px;outline:none}
+.search input::placeholder{color:var(--dim)}
+.search .badge{white-space:nowrap;border:1px dashed var(--border);padding:10px 12px;border-radius:12px;color:var(--dim)}
+
+/* Пейджер */
+.tabs{position:sticky;top:72px;z-index:4;display:flex;gap:8px;overflow:auto;padding:8px 12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(15,20,28,.9),rgba(15,20,28,.6))}
+.tab{flex:0 0 auto;padding:10px 14px;border-radius:999px;background:var(--glass);border:1px solid var(--border);color:var(--dim)}
+.tab.active{color:var(--text);background:linear-gradient(180deg,rgba(25,195,125,.15),rgba(25,195,125,.08));border-color:rgba(25,195,125,.35);box-shadow:0 4px 18px rgba(25,195,125,.15)}
+
+/* Контейнер страниц со свайпом */
+.pages{position:relative;overflow:hidden}
+.page{min-height:calc(100dvh - 150px);padding:14px;display:none}
+.page.active{display:block;animation:fade .18s}
+@keyframes fade{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Карточки клиента */
+.card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin:10px 0;padding:12px}
+.card .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card .title{font-weight:600}
+.card .muted{color:var(--dim)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:12px;padding:6px 8px;border-radius:999px;border:1px solid var(--border);background:var(--glass);color:var(--dim)}
+.chip.positive{color:#b8f7d9;border-color:rgba(25,195,125,.4)}
+.chip.warn{color:#ffe0ad;border-color:rgba(255,176,32,.4)}
+.chip.danger{color:#ffb8b8;border-color:rgba(255,93,93,.4)}
+
+.actions{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);text-align:center}
+.btn.primary{background:linear-gradient(180deg,#1dd488,#19c37d);border-color:#19c37d;color:#062e1e;font-weight:700}
+.btn.danger{background:linear-gradient(180deg,#ff7b7b,#ff5d5d);border-color:#ff5d5d;color:#2b0707;font-weight:700}
+.btn.ghost{background:var(--soft)}
+
+/* Форма клиента */
+.form{display:grid;gap:10px}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;color:var(--dim)}
+.field input,.field textarea,.field select{padding:12px;background:var(--soft);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none}
+.field textarea{min-height:80px;resize:vertical}
+
+/* Нижняя панель */
+.navbar{position:sticky;bottom:0;z-index:3;background:linear-gradient(0deg,rgba(9,12,16,.95),rgba(9,12,16,.75));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:10px}
+.navrow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.navbtn{padding:10px;border-radius:12px;background:var(--glass);border:1px solid var(--border);color:var(--dim);text-align:center}
+.navbtn.active{color:var(--text);border-color:rgba(25,195,125,.35);box-shadow:0 4px 18px rgba(25,195,125,.15)}
+
+/* Рейтинг */
+.stars{display:flex;gap:6px}
+.star{font-size:20px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.star.filled{color:#ffd45b}
+
+/* Плашки сумм */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kpi{background:linear-gradient(180deg,rgba(25,195,125,.12),rgba(25,195,125,.04));border:1px solid rgba(25,195,125,.35);border-radius:14px;padding:12px}
+.kpi h3{margin:0 0 6px 0;font-size:13px;color:var(--dim)}
+.kpi b{font-size:18px}
+
+.small{font-size:12px;color:var(--dim)}
+.phone{color:#b8f7d9;text-decoration:none}
+
+/* Подсказки */
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#111;opacity:0;color:#fff;border:1px solid #333;padding:10px 12px;border-radius:10px;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Полупрозрачные вкладки (подсветка) */
+.tab::after{content:"";display:block;height:2px;border-radius:2px;background:transparent;margin-top:6px}
+.tab.active::after{background:radial-gradient(60% 60% at 50% 50%, var(--accent), transparent)}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand"><div class="dot"></div><h1>MiniCRM — мастерская</h1></div>
+    <div class="search">
+      <input id="q" placeholder="Поиск: имя, телефон, модель, #ID… (по буквам/цифрам)" autocomplete="off">
+      <div class="badge" id="stat">0 клиентов</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-page="home">Главная</button>
+    <button class="tab" data-page="debts">Должники</button>
+    <button class="tab" data-page="work">В работе</button>
+    <button class="tab" data-page="done">Завершённые</button>
+    <button class="tab" data-page="edit">Новый/Правка</button>
+    <button class="tab" data-page="settings">Настройки</button>
+  </div>
+
+  <div class="pages" id="pages">
+    <!-- Главная: сводка и список -->
+    <section class="page active" id="page-home">
+      <div class="kpis" id="home-kpis"></div>
+      <div id="home-list"></div>
+    </section>
+
+    <!-- Должники: единая сводная карточка + список -->
+    <section class="page" id="page-debts">
+      <div id="debts-summary"></div>
+      <div id="debts-list"></div>
+    </section>
+
+    <!-- В работе -->
+    <section class="page" id="page-work">
+      <div id="work-list"></div>
+    </section>
+
+    <!-- Завершённые -->
+    <section class="page" id="page-done">
+      <div id="done-list"></div>
+    </section>
+
+    <!-- Форма клиента -->
+    <section class="page" id="page-edit">
+      <form class="form" id="form">
+        <input type="hidden" id="f-id">
+        <div class="field"><label>Имя клиента</label><input id="f-name" required></div>
+        <div class="field"><label>Телефон</label><input id="f-phone" inputmode="tel" placeholder="+7…"></div>
+        <div class="field"><label>Модель аппарата</label><input id="f-device"></div>
+        <div class="field"><label>Проблема</label><textarea id="f-issue"></textarea></div>
+
+        <div class="field"><label>Стоимость работы ₽</label><input id="f-labor" type="number" inputmode="numeric" value="0"></div>
+        <div class="field"><label>Себестоимость запчастей ₽</label><input id="f-parts" type="number" inputmode="numeric" value="0"></div>
+        <div class="field"><label>Оплачено ₽</label><input id="f-paid" type="number" inputmode="numeric" value="0"></div>
+        <div class="field"><label>Статус</label>
+          <select id="f-status">
+            <option value="work">В работе</option>
+            <option value="done">Завершён</option>
+          </select>
+        </div>
+        <div class="field"><label>Заметка мастера</label><textarea id="f-notes"></textarea></div>
+
+        <div class="field"><label>Рейтинг клиента</label>
+          <div class="stars" id="f-stars"></div>
+          <div class="small">каснись нужной звезды</div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn ghost" id="btn-cancel">Отмена</button>
+          <button type="submit" class="btn primary" id="btn-save">Сохранить</button>
+        </div>
+        <button type="button" class="btn danger" id="btn-delete" style="margin-top:6px">Удалить</button>
+      </form>
+    </section>
+
+    <!-- Настройки/онлайн -->
+    <section class="page" id="page-settings">
+      <div class="card">
+        <div class="title">Синхронизация с сервером</div>
+        <div class="field" style="margin-top:10px">
+          <label>API URL (Apps Script Web App)</label>
+          <input id="cfg-api" placeholder="https://script.google.com/macros/s/XXX/exec">
+        </div>
+        <div class="field">
+          <label>Режим</label>
+          <select id="cfg-mode">
+            <option value="offline-first">Offline‑first (локально → сервер)</option>
+            <option value="online-preferred">Онлайн‑в приоритете</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btn-save-config">Сохранить настройки</button>
+          <button class="btn primary" id="btn-sync-now">Синхронизировать</button>
+        </div>
+        <div class="small" id="sync-log" style="margin-top:8px;color:var(--dim)"></div>
+      </div>
+      <div class="card">
+        <div class="title">PWA</div>
+        <div class="chips">
+          <span class="chip">Установка на Домой</span>
+          <span class="chip">Работа без Интернета</span>
+          <span class="chip">Кэш статических файлов</span>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn" id="btn-install">Установить приложение</button>
+          <button class="btn" id="btn-clear-cache">Сброс кэша</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="navbar" id="navbar">
+    <div class="navrow">
+      <button class="navbtn active" data-page="home">Главная</button>
+      <button class="navbtn" data-page="debts">Долги</button>
+      <button class="navbtn" data-page="work">В работе</button>
+      <button class="navbtn" data-page="edit">Новый</button>
+      <button class="navbtn" data-page="settings">Настройки</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Сохранено</div>
+
+<script>
+// ===== Хелперы DOM и безопасная привязка =====
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const byId = id => document.getElementById(id);
+const safeOn = (el, type, handler, opts) => { if(el) el.addEventListener(type, handler, opts); };
+
+// ===== Локальное «хранилище» =====
+const key = 'miniCRM.v1';
+const cfgKey = 'miniCRM.config.v1';
+const queueKey = 'miniCRM.queue.v1';
+const db = {
+  get(){ try{ return JSON.parse(localStorage.getItem(key)) || [] }catch(e){ return [] }},
+  set(list){ localStorage.setItem(key, JSON.stringify(list)); }
+};
+const cfg = {
+  get(){ try{ return JSON.parse(localStorage.getItem(cfgKey)) || { apiUrl:'', mode:'offline-first' } }catch(e){ return { apiUrl:'', mode:'offline-first' } } },
+  set(v){ localStorage.setItem(cfgKey, JSON.stringify(v)); }
+};
+const opQueue = {
+  get(){ try{ return JSON.parse(localStorage.getItem(queueKey)) || [] }catch(e){ return [] } },
+  set(v){ localStorage.setItem(queueKey, JSON.stringify(v)); },
+  push(op){ const q=this.get(); q.push({...op, ts:Date.now()}); this.set(q); }
+};
+
+// ===== Утилиты =====
+const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n||0)));
+const money = n => (fmt(n) + ' ₽');
+const nowId = () => '#' + Math.floor(100000 + Math.random()*899999);
+function compute(item){
+  const labor = +item.labor||0, parts = +item.parts||0, paid = +item.paid||0;
+  const total = labor + parts;
+  const debt = Math.max(0, total - paid);
+  const rest = Math.max(0, paid - total) > 0 ? 0 : (total - paid);
+  return { total, debt, rest };
+}
+function toast(msg){
+  const t = byId('toast');
+  if(!t) return; t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+// ===== Демо‑данные (если пусто) =====
+(function seed(){
+  if(db.get().length) return;
+  const sample = [
+    {id:nowId(), name:'Алексей Смирнов', phone:'+7 900 123‑45‑67', device:'iPhone 11', issue:'Замена дисплея', labor:2500, parts:3500, paid:3000, status:'work', notes:'Ожидаем запчасть', rating:4, createdAt:Date.now()-86400000*2},
+    {id:nowId(), name:'Ирина Кадомцева', phone:'+7 915 222‑00‑11', device:'Redmi Note 10', issue:'АКБ + чистка', labor:1800, parts:1200, paid:2000, status:'done', notes:'Выдан 31.10', rating:5, createdAt:Date.now()-86400000*3},
+    {id:nowId(), name:'Стас Петров', phone:'+7 901 555‑77‑88', device:'Realme C61', issue:'Замена сенсора', labor:2200, parts:1900, paid:500, status:'work', notes:'Клиент просил звонок', rating:3, createdAt:Date.now()-86400000}
+  ];
+  db.set(sample);
+})();
+
+// ===== Состояние UI =====
+let state = { page:'home', query:'', editId:null, stars:0 };
+let refs = {};
+
+// ===== Рендеринг и логика =====
+function matchQuery(item, q){
+  if(!q) return true; q=q.toLowerCase();
+  const src = [item.name, item.phone, item.device, item.id].join(' ').toLowerCase().replaceAll(/[\s\-()]/g,'');
+  const compactQ = q.toLowerCase().replaceAll(/[\s\-()]/g,'');
+  return src.includes(compactQ) || src.startsWith(compactQ);
+}
+
+function aggregate(list){
+  let totalDebt=0,totalPaid=0,totalSum=0,inWork=0,done=0, debtors=0;
+  list.forEach(x=>{
+    const m=compute(x); totalDebt+=m.debt; totalPaid+=+x.paid||0; totalSum+=m.total; inWork+= x.status==='work'?1:0; done+= x.status==='done'?1:0; if(m.debt>0) debtors++;
+  });
+  return {totalDebt,totalPaid,totalSum,inWork,done,debtors,count:list.length};
+}
+
+function renderKpis(list){
+  const a=aggregate(list);
+  const kpis = byId('home-kpis');
+  if(!kpis) return;
+  kpis.innerHTML = `
+    <div class="kpi"><h3>Всего клиентов</h3><b>${a.count}</b><div class="small">В работе: ${a.inWork} • Завершено: ${a.done}</div></div>
+    <div class="kpi"><h3>Финансы</h3><b>${money(a.totalPaid)} / ${money(a.totalSum)}</b><div class="small">Долг общий: <b style="color:var(--warn)">${money(a.totalDebt)}</b></div></div>
+  `;
+}
+
+function card(item){
+  const m = compute(item);
+  const debtChip = m.debt>0 ? `<span class="chip danger">Долг: ${money(m.debt)}</span>` : `<span class="chip positive">Оплачено: ${money(item.paid||0)}</span>`;
+  const statusChip = item.status==='done' ? `<span class="chip positive">Завершён</span>` : `<span class="chip warn">В работе</span>`;
+  const stars = '★★★★★'.split('').map((s,i)=>`<span class="star ${i< (item.rating||0) ? 'filled':''}" aria-hidden="true">★</span>`).join('');
+  return `
+    <div class="card" data-id="${item.id}">
+      <div class="row">
+        <div class="title">${item.name} <span class="muted">${item.id}</span></div>
+        <div class="stars" aria-hidden="true">${stars}</div>
+      </div>
+      <div class="row small" style="margin-top:6px">
+        <a class="phone" href="tel:${(item.phone||'').replace(/[^\d+]/g,'')}">📞 ${item.phone||''}</a>
+        <span>• ${item.device||''}</span>
+      </div>
+      <div class="chips">
+        <span class="chip">Работа: ${money(item.labor||0)}</span>
+        <span class="chip">Детали: ${money(item.parts||0)}</span>
+        <span class="chip">Итого: ${money(m.total)}</span>
+        ${debtChip}
+        ${statusChip}
+      </div>
+      <div class="actions">
+        <button class="btn" data-act="call">Вызвать</button>
+        <button class="btn" data-act="done">Завершить</button>
+        <button class="btn primary" data-act="edit">Открыть</button>
+      </div>
+    </div>`;
+}
+
+function empty(msg){ return `<div class="card"><div class="muted">${msg}</div></div>`; }
+
+function renderLists(){
+  const list = db.get();
+  const filtered = list.filter(x=>matchQuery(x, state.query));
+  const statEl = byId('stat'); if(statEl) statEl.textContent = `${filtered.length} клиентов`;
+  renderKpis(filtered);
+  const home = byId('home-list');
+  if(home) home.innerHTML = filtered.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0)).map(card).join('') || empty('Нет данных. Добавьте клиента.');
+  const debtOnly = filtered.filter(x=>compute(x).debt>0);
+  const sumDebt = debtOnly.reduce((s,x)=>s+compute(x).debt,0);
+  const debSum = byId('debts-summary');
+  if(debSum) debSum.innerHTML = `
+    <div class="card">
+      <div class="title">Должники — сводка</div>
+      <div class="chips">
+        <span class="chip danger">Всего долг: ${money(sumDebt)}</span>
+        <span class="chip">Количество: ${debtOnly.length}</span>
+      </div>
+      <div class="small" style="margin-top:6px">Это «единая карточка» по всем должникам. Ниже — подробности по каждому.</div>
+    </div>`;
+  const debList = byId('debts-list');
+  if(debList) debList.innerHTML = debtOnly.map(card).join('') || empty('Нет должников 🎉');
+  const workList = byId('work-list');
+  if(workList) workList.innerHTML = filtered.filter(x=>x.status==='work').map(card).join('') || empty('Нет активных работ');
+  const doneList = byId('done-list');
+  if(doneList) doneList.innerHTML = filtered.filter(x=>x.status==='done').map(card).join('') || empty('Пока нет завершённых');
+}
+
+function renderStars(container, value){
+  if(!container) return;
+  container.innerHTML = '★★★★★'.split('').map((s,i)=>`<span class="star ${i<value?'filled':''}" data-val="${i+1}">★</span>`).join('');
+}
+
+function fillForm(id){
+  const form = byId('form'); if(!form) return;
+  const delBtn = byId('btn-delete');
+  const fields = {
+    id: byId('f-id'), name:byId('f-name'), phone:byId('f-phone'),
+    device:byId('f-device'), issue:byId('f-issue'), labor:byId('f-labor'),
+    parts:byId('f-parts'), paid:byId('f-paid'), status:byId('f-status'),
+    notes:byId('f-notes')
+  };
+  const starsEl = byId('f-stars');
+
+  if(!id){
+    form.reset(); state.stars=0; renderStars(starsEl, 0); if(delBtn) delBtn.style.display='none';
+    return;
+  }
+  const item = db.get().find(x=>x.id===id); if(!item){ form.reset(); renderStars(starsEl, 0); return; }
+  if(fields.id) fields.id.value=item.id;
+  if(fields.name) fields.name.value=item.name||'';
+  if(fields.phone) fields.phone.value=item.phone||'';
+  if(fields.device) fields.device.value=item.device||'';
+  if(fields.issue) fields.issue.value=item.issue||'';
+  if(fields.labor) fields.labor.value=item.labor||0;
+  if(fields.parts) fields.parts.value=item.parts||0;
+  if(fields.paid) fields.paid.value=item.paid||0;
+  if(fields.status) fields.status.value=item.status||'work';
+  if(fields.notes) fields.notes.value=item.notes||'';
+  state.stars = item.rating||0; renderStars(starsEl, state.stars);
+  if(delBtn) delBtn.style.display='block';
+}
+
+function go(page){ state.page = page; updateNavUI(); renderLists(); if(page==='edit') fillForm(state.editId); if(page==='settings') loadConfigUI(); }
+
+function updateNavUI(){
+  $$('.tab').forEach(b=> b.classList.toggle('active', b.dataset.page===state.page));
+  $$('.navbtn').forEach(b=> b.classList.toggle('active', b.dataset.page===state.page));
+  $$('.page').forEach(p=> p.classList.toggle('active', p.id===`page-${state.page}`));
+}
+
+// ===== Онлайн синк (заглушка + очередь) =====
+async function syncNow(){
+  const conf = cfg.get();
+  const log = byId('sync-log'); if(log) log.textContent = 'Идёт синхронизация…';
+  if(!conf.apiUrl){
+    if(log) log.textContent = 'API URL не задан. Сохрани адрес в настройках.';
+    toast('Укажи API URL');
+    return;
+  }
+  try{
+    const listRes = await fetch(conf.apiUrl + '?action=list', {cache:'no-store'});
+    if(listRes.ok){
+      const payload = await listRes.json().catch(()=>null);
+      if(Array.isArray(payload)){
+        db.set(payload);
+      }
+    }
+    const q = opQueue.get();
+    if(q.length){
+      const postRes = await fetch(conf.apiUrl + '?action=apply', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(q)
+      });
+      if(postRes.ok){ opQueue.set([]); }
+    }
+    renderLists();
+    if(log) log.textContent = 'Синхронизация завершена.';
+    toast('Синхронизация завершена');
+  }catch(e){
+    if(log) log.textContent = 'Ошибка сети/сервер недоступен.';
+    console.error(e);
+    toast('Ошибка синхронизации');
+  }
+}
+
+function loadConfigUI(){
+  const conf = cfg.get();
+  const api = byId('cfg-api'); const mode = byId('cfg-mode');
+  if(api) api.value = conf.apiUrl || '';
+  if(mode) mode.value = conf.mode || 'offline-first';
+}
+
+function saveConfig(){
+  const api = byId('cfg-api')?.value?.trim() || '';
+  const mode = byId('cfg-mode')?.value || 'offline-first';
+  cfg.set({ apiUrl: api, mode });
+  toast('Настройки сохранены');
+}
+
+function recordOp(type, data){
+  opQueue.push({ type, data });
+}
+
+// ===== Инициализация и безопасные обработчики =====
+function init(){
+  refs = {
+    pagesEl: byId('pages'),
+    tabsEl: byId('tabs'),
+    navbar: byId('navbar'),
+    qEl: byId('q')
+  };
+
+  // Поиск
+  safeOn(refs.qEl, 'input', ()=>{ state.query = refs.qEl.value.trim(); renderLists(); });
+
+  // Навигация
+  const navHandler = (e)=>{
+    const btn = e.target.closest('[data-page]'); if(!btn) return;
+    const page = btn.getAttribute('data-page');
+    if(page==='edit') state.editId=null;
+    go(page);
+  };
+  safeOn(refs.tabsEl, 'click', navHandler);
+  safeOn(refs.navbar, 'click', navHandler);
+
+  // Свайпы
+  let touchX=null; const order=['home','debts','work','done','edit','settings'];
+  safeOn(refs.pagesEl,'touchstart',e=>{touchX=e.changedTouches[0].clientX});
+  safeOn(refs.pagesEl,'touchend',e=>{
+    if(touchX==null) return; const dx=e.changedTouches[0].clientX - touchX; touchX=null;
+    if(Math.abs(dx)<50) return;
+    let idx = order.indexOf(state.page);
+    if(dx<0 && idx<order.length-1) go(order[idx+1]);
+    if(dx>0 && idx>0) go(order[idx-1]);
+  });
+
+  // Карточки (делегирование)
+  safeOn(refs.pagesEl,'click',(e)=>{
+    const card = e.target.closest('.card');
+    if(!card) return;
+    const id = card.dataset.id;
+    if(e.target.closest('[data-act="edit"]')){ state.editId=id; go('edit'); return; }
+    if(e.target.closest('[data-act="done"]')){
+      let list=db.get(); const i=list.findIndex(x=>x.id===id);
+      if(i>-1){ list[i].status='done'; db.set(list); recordOp('update',{id, status:'done'}); toast('Отмечено «Завершён»'); renderLists(); }
+      return;
+    }
+    if(e.target.closest('[data-act="call"]')){
+      const item = db.get().find(x=>x.id===id);
+      if(item){ window.location.href = 'tel:'+ (item.phone||'').replace(/[^\d+]/g,''); }
+      return;
+    }
+    if(!e.target.closest('.btn')){ state.editId=id; go('edit'); }
+  });
+
+  // Рейтинг
+  safeOn(byId('page-edit'), 'click', (e)=>{
+    const star = e.target.closest('#f-stars .star'); if(!star) return;
+    const val = +star.dataset.val || 0;
+    state.stars = val; renderStars(byId('f-stars'), state.stars);
+  });
+
+  // Форма: сохранить/удалить/отмена
+  const form = byId('form');
+  safeOn(form, 'submit', (e)=>{
+    e.preventDefault();
+    const fields = {
+      id: byId('f-id'), name:byId('f-name'), phone:byId('f-phone'),
+      device:byId('f-device'), issue:byId('f-issue'), labor:byId('f-labor'),
+      parts:byId('f-parts'), paid:byId('f-paid'), status:byId('f-status'),
+      notes:byId('f-notes')
+    };
+    const payload = {
+      id: (fields.id && fields.id.value) || nowId(),
+      name: (fields.name && fields.name.value.trim()) || '',
+      phone: (fields.phone && fields.phone.value.trim()) || '',
+      device: (fields.device && fields.device.value.trim()) || '',
+      issue: (fields.issue && fields.issue.value.trim()) || '',
+      labor: +(fields.labor && fields.labor.value)||0,
+      parts: +(fields.parts && fields.parts.value)||0,
+      paid: +(fields.paid && fields.paid.value)||0,
+      status: (fields.status && fields.status.value) || 'work',
+      notes: (fields.notes && fields.notes.value.trim()) || '',
+      rating: state.stars||0,
+      createdAt: Date.now()
+    };
+    const list = db.get();
+    const i = list.findIndex(x=>x.id===payload.id);
+    if(i>-1) list[i] = {...list[i], ...payload}; else list.unshift(payload);
+    db.set(list); recordOp(i>-1?'update':'create', payload);
+    toast('Сохранено'); state.editId = payload.id; go('home');
+  });
+
+  safeOn(byId('btn-delete'), 'click', ()=>{
+    const idEl = byId('f-id'); const id = idEl && idEl.value; if(!id) return;
+    const list = db.get().filter(x=>x.id!==id); db.set(list); recordOp('delete',{id}); toast('Удалено'); state.editId=null; go('home');
+  });
+  safeOn(byId('btn-cancel'), 'click', ()=>{ state.editId=null; go('home'); });
+
+  // Настройки и синк
+  safeOn(byId('btn-save-config'), 'click', saveConfig);
+  safeOn(byId('btn-sync-now'), 'click', syncNow);
+
+  // PWA install
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt = e; });
+  safeOn(byId('btn-install'),'click', async ()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; }
+    else toast('Если кнопка не работает — открой через Chrome и обнови страницу.');
+  });
+
+  // Clear cache via SW message
+  safeOn(byId('btn-clear-cache'),'click', ()=>{
+    if(navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'});
+      toast('Запрошен сброс кэша');
+    }
+  });
+
+  // Первый рендер
+  go(state.page);
+}
+
+// SW регистрация
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(()=>console.log('SW registered'))
+      .catch(err=>console.warn('SW failed', err));
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', init);
+}else{ init(); }
+
+// ====== SMOKE TESTS ======
+(function tests(){
+  const log = console.log.bind(console);
+  const assert = (cond, msg) => cond ? log('✅', msg) : console.error('❌', msg);
+  const ex = compute({labor:2000, parts:1500, paid:500});
+  assert(ex.total===3500 && ex.debt===3000 && ex.rest===3000, 'compute(): базовая математика');
+  const sample = {id:'#123456', name:'Тест Имя', phone:'+7000', device:'Pixel 6'};
+  assert(matchQuery(sample,'тест'), 'matchQuery(): кириллица в имени');
+  assert(matchQuery(sample,'#123'), 'matchQuery(): префикс ID');
+  assert(matchQuery(sample,'7000'), 'matchQuery(): цифры в телефоне');
+  assert(!!byId('q'), '#q присутствует');
+  assert($$('.tab').length>=6, 'вкладки присутствуют');
+  assert(!!byId('pages'), '#pages присутствует');
+  const prev = state.page; go('debts');
+  assert(byId('page-debts').classList.contains('active'), 'go(): переключение на Должники');
+  go(prev);
+})();
+</script>
+</body>
+</html>
