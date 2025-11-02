@@ -1,64 +1,6 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MiniCRM Mobile v2 — Android</title>
-  <meta name="theme-color" content="#0b0f14" />
-  <!-- Лёгкая оболочка: всё тяжёлое вынесено во внешние файлы, чтобы холст/браузер не ругался на длину документа. -->
-  <link rel="preload" href="styles.css" as="style" />
-  <link rel="stylesheet" href="styles.css" />
-  <!-- PWA manifest + icons -->
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="icon" sizes="512x512" href="icons/icon-512.png" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-</head>
-<body>
-  <noscript>Для работы приложения включите JavaScript.</noscript>
-  <div id="app" style="padding:16px;color:#e7eef7;font:16px system-ui;background:#0b0f14;min-height:100dvh">
-    Загрузка MiniCRM v2…
-  </div>
-  <!-- Внешний минифицированный JS. Должен лежать рядом с index.html на GitHub Pages. -->
-  <script src="app.min.js" defer></script>
-  <script>
-    // Страховка на случай, если app.min.js не загрузился (неверный путь/URL):
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (!window.__MiniCRMv2BootOK) {
-          const app = document.getElementById('app');
-          app.innerHTML = (
-            '<div style="max-width:680px;margin:0 auto">'
-            + '<h1 style="margin:0 0 12px">MiniCRM v2 — не удалось загрузить скрипт</h1>'
-            + '<p>Проверьте, что файлы <code>styles.css</code> и <code>app.min.js</code> расположены в том же каталоге, что и <code>index.html</code>, и пути совпадают.</p>"
-            + '<ol>'
-            + '<li>Откройте инструменты разработчика (F12) → Console: нет ли ошибок 404/модуля?</li>'
-            + '<li>Зайдите по прямой ссылке: <code>https://ВАШ_ЮЗЕР.github.io/ВАШ_РЕПО/app.min.js</code> — файл должен открываться.</li>'
-            + '<li>Если используете подкаталог (например, <code>/crm/</code>), обновите пути в index.html: <code>href="/crm/styles.css"</code> и <code>src="/crm/app.min.js"</code>.</li>'
-            + '</ol>'
-            + '<p style="opacity:.8">Подсказка: при успешной инициализации скрипт выставляет <code>window.__MiniCRMv2BootOK = true</code>.</p>'
-            + '</div>'
-          );
-        }
-      }, 1200);
-    });
-  </script>
-  <!-- Регистрация Service Worker для офлайна и установки на главный экран -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("service-worker.js").catch(()=>{});
-      });
-    }
-  </script>
-
-</body>
-</html>
-<!doctype html>
-<html lang="ru">
-<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MiniCRM Mobile — Android (PWA)</title>
